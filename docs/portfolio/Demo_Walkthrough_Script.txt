@@ -1,0 +1,19 @@
+AI Smart Shopping Assistant — Demo walkthrough
+
+Preparation
+-----------
+Use an authorized local environment with only approved March/June runtime assets. Do not show customer identifiers, raw records, private reports, credentials, or any September-derived material. The current package has no genuine browser screenshots; capture no screen until the UI has been reviewed for sensitive content.
+
+Walkthrough
+-----------
+1. Introduce the project as a local Streamlit portfolio prototype, not a live commerce or production service.
+2. Explain that the product text corpus and transaction analytics are separate data families. March is the customer training/fitting period, June is validation, and September is protected.
+3. On Product Classification, enter a harmless synthetic product description. Explain TF-IDF + Linear SVM and the reported 95.80% accuracy on a separate product-text test split.
+4. On Recommendations, explain that output is a precomputed June-only item-item cosine-similarity result, not a live catalog ranking.
+5. On Customer Intelligence, Predictions, and Customer Segments, describe cutoff-specific March/June snapshots, Gradient Boosting repeat predictions, Ridge spending estimates, and three descriptive KMeans clusters. Do not show a real customer ID in a recording.
+6. On Model Insights, explain native/permutation importance and the limitations of the fixed zero-feature perturbation examples. State that SHAP and sentiment analysis are not implemented.
+7. Close with current quality evidence: the Phase 17 report records 96 synthetic-fixture unit tests passing; page AppTest results are in-process checks, not browser testing. No deployment, live OIDC test, accessibility audit, or production check has occurred.
+
+Suggested closing
+-----------------
+“This project demonstrates several connected ML workflows with explicit temporal and privacy boundaries. The next step is an approved release and hosting design, followed by real browser, authentication, and operational validation.”

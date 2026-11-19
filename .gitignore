@@ -1,0 +1,88 @@
+# Python bytecode and environments
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+.venv/
+venv/
+env/
+ENV/
+
+# Build and test artifacts
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/
+*.ipynb~
+
+# Local configuration and editor files
+.env
+.env.*
+!.env.example
+.streamlit/secrets.toml
+.streamlit/secrets.toml.*
+!.streamlit/secrets.toml.example
+*.pem
+*.key
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Downloaded or generated data
+datasets/raw/*
+!datasets/raw/.gitkeep
+datasets/processed/*
+!datasets/processed/.gitkeep
+
+# Customer-level and derived data must be provisioned privately
+datasets/customer_analytics/
+datasets/customer_insights/
+datasets/features/
+datasets/model_ready/
+datasets/recommendations/
+datasets/cleaned/
+datasets/audit/
+datasets/eda_results/
+datasets/staging/
+datasets/datasets/
+
+# Default-deny remaining dataset contents; allow placeholder files only
+datasets/**
+!datasets/**/
+!datasets/**/.gitkeep
+
+# Trained model artifacts
+models/*
+!models/.gitkeep
+*.joblib
+*.pkl
+*.pickle
+*.h5
+*.keras
+*.pt
+*.pth
+*.onnx
+*.safetensors
+*.ckpt
+
+# Reports may include customer-level examples and operational diagnostics.
+# Keep them private by default; publish only a separately reviewed export.
+reports/**
+!reports/.gitkeep
+
+# Row-level customer reports must remain private
+reports/segmentation/phase_9/Customer_Segment_Assignments.csv
+reports/explainability/phase_9/*_Individual_Explanations.csv
+reports/recommendation/phase_8/Customer_Level_Recommendation_Metrics.csv
+
+# Keep project and deployment environments out of source control
+.venv-*/
+.phase14-venv/
+deployment_staging/

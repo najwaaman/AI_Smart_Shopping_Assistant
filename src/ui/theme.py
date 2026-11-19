@@ -1,0 +1,15 @@
+APP_THEME = {
+    "navy": "#07111F",
+    "charcoal": "#111827",
+    "panel": "#FFFFFF",
+    "panel_soft": "#F7F9FC",
+    "border": "#DDE4EC",
+    "text": "#172033",
+    "muted": "#67748A",
+    "teal": "#18A999",
+    "cyan": "#3DA9FC",
+    "blue": "#3568FF",
+    "orange": "#F59E0B",
+    "red": "#DF5B68",
+    "green": "#22A06B",
+}

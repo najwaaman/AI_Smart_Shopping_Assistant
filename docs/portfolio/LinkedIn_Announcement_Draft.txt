@@ -1,0 +1,9 @@
+I recently completed a portfolio prototype: an AI Smart Shopping Assistant built with Python, Streamlit, and scikit-learn.
+
+The project brings together product description classification, historical customer analytics, repeat-purchase and spending predictions, June-only product recommendations, customer segmentation, and model insight views. The product classifier uses TF-IDF with a Linear SVM and reached 95.80% accuracy on its separate product-text test split.
+
+I focused on keeping the workflows explicit: March is the customer training/fitting period, June is validation, and the September holdout remains protected. The datasets and task-specific artifacts remain separate. Recommendations are precomputed and June-only; spending predictions do not have an established currency label. Explainability uses native and permutation importance, not SHAP.
+
+The application has not been deployed or publicly released. Browser-based accessibility and performance checks, live authentication-provider validation, and private cloud data controls remain future work. I’m treating this as an honest portfolio prototype and continuing to improve its release and security process.
+
+#Python #Streamlit #MachineLearning #RetailAnalytics #ScikitLearn
