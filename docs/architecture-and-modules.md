@@ -1,48 +1,29 @@
-# Architecture and modules
+﻿# Public application architecture
 
 ## Application flow
 
-`app.py` configures Streamlit, applies the fail-closed authentication gate, then registers and runs seven pages. Pages call services in `src/services/`; services validate inputs and use `ModelLoader` for saved-model inference. Shared rendering, navigation, authentication, and Overview data assembly live under `src/ui/`.
+`app.py` configures Streamlit, applies the fail-closed OIDC/email-allowlist gate, and registers all seven page scripts. Shared layout and theme code lives under `src/ui/`. Public aggregate pages call the Phase 1A allowlisted loader through the Phase 1B release-gate helper. Fictional demonstrations use deterministic helpers from `src/ui/public_demo_logic.py`.
 
-```text
-app.py -> OIDC / verified-email allowlist gate -> seven-page navigation
-  01 Overview              -> March/June snapshot service + cluster profile summary
-  02 Product Classification -> ProductCategoryService -> saved TF-IDF / Linear SVM
-  03 Recommendations        -> RecommendationService -> precomputed June item-item rows
-  04 Customer Intelligence  -> historical snapshots + customer insights + segment lookup
-  05 Predictions            -> repeat-purchase and spending services + cutoff features
-  06 Customer Segments      -> segment profiles, assignments, and stability summaries
-  07 Model Insights         -> model comparison, importance, residual, explanation reports
-```
-
-This describes local code paths, not a deployment architecture. The app has no external commerce API or database integration.
-
-## Implemented modules and runtime behavior
-
-| Module | Implemented behavior |
+| Page | Runtime behavior |
 | --- | --- |
-| Product classification | `ProductCategoryService` loads the configured Linear SVM + TF-IDF pipeline and classifies supplied text into the saved classes. |
-| Recommendations | `RecommendationService` validates June 1, 2011 and returns precomputed item-item cosine-similarity rows. Unknown customers are rejected. Saved recommendation artifacts are not used for on-demand ranking in this path. |
-| Repeat purchase | `RepeatPurchaseService` chooses the March or June model-ready feature file, validates predictors, and calls the saved Gradient Boosting classifier. |
-| Future spending | `SpendingPredictionService` chooses the matching approved cutoff feature file and calls saved Ridge Regression. Raw output may be negative and has no established currency label. |
-| Historical customer view | `HistoricalSnapshotService` maps the March and June cutoffs to separate Phase 12 snapshot files. Pages may also use other precomputed reports/insights as described by their services. Their data lineage is not inferred from the snapshot mapping. |
-| Segmentation | `SegmentationService` looks up precomputed customer/cutoff assignments. KMeans was fitted on March with three clusters; the service does not perform arbitrary feature-vector assignment. |
-| Explainability | `ExplanationService` serves saved global-importance tables and a fixed cohort of individual perturbation examples. It does not compute SHAP or explanations for arbitrary new customers. |
-| Overview | `src/ui/dashboard_data.py` loads the two approved historical snapshots and the Phase 9 March/June cluster profile summary. It does not load the broad transaction-lines table. |
-| Authentication | `require_authenticated_user()` is called before page registration. It checks OIDC settings and an exact allowlist of verified emails. No role/tenant system exists. |
+| 01 Overview | Shows an aggregate-review pending state; it does not render report values while the release gate is closed. |
+| 02 Product Classification | Checks whether the configured saved TF-IDF + Linear SVM pipeline is available. If missing or unloadable, it shows a safe unavailable message and produces no classification. |
+| 03 Recommendations | Ranks fictional catalogue items using illustrative cosine similarity. The aggregate evaluation panel remains pending. |
+| 04 Customer Intelligence | Shows the privacy-reviewed aggregate cohort interface only after approval; no customer lookup or individual rows. |
+| 05 Predictions | Shows hypothetical visitor inputs and transparent illustrative arithmetic; no trained customer model is called. |
+| 06 Customer Segments | Aggregate-only profile, stability, and comparison views behind the release gate. |
+| 07 Model Insights | Global model metrics and importance views behind the release gate; no individual explanations. |
 
-The Phase 9 source reports describe the segmentation and explainability artifacts as March/June based, with September untouched. Deployment should still provision only those specific approved artifacts and verify their lineage before mounting them.
+## Public data boundary
 
-## Shared implementation details
+`PublicAggregateService` has an explicit eight-report allowlist, required schema checks, selected-column projections, and configured suppression. `PUBLIC_AGGREGATES_RELEASED` remains `False`, so the helper rejects report requests before reading report files. Do not bypass the helper or reconstruct suppressed values.
 
-- `Settings` contains configured relative paths for saved models and task-specific data.
-- `ModelLoader` deserializes and caches models within its instance; it is not documented as process-wide caching.
-- Input validators restrict customer cutoff workflows to March 1 and June 1, 2011. Recommendations accept June only.
-- HTML-escaped display helpers are used for untrusted textual content where applicable; this is not a complete application security audit.
-- Pages use local files and the running process's filesystem permissions. `.gitignore` does not enforce runtime access control.
+The public pages do not call customer-specific history, recommendation, segmentation, explanation, repeat-purchase, or spending services. Existing backend modules remain in the package for compatibility; the current public navigation does not invoke those customer workflows. Their presence in the source tree is not permission to provision customer data.
 
-## Known integration limits
+No datasets, saved models, private reports, or static data assets are required for the public page shells and fictional demonstrations. Product Classification needs its private pipeline artifact to make real predictions; until an approved provisioning process exists, its unavailable state is expected. Aggregate pages remain useful as documented shells but withhold project-derived values pending review.
 
-- There is no database, commerce API, user role model, tenant isolation, or automated asset download.
-- Some pages read precomputed customer-level reports at page initialization. Their lineage and file permissions must be checked before a deployment mount is approved.
-- Page-level Streamlit tests are not browser or live navigation tests. Authenticated multipage navigation requires a real configured provider and remains unverified.
+## Authentication and limitations
+
+The app entry point requires OIDC configuration and an exact verified-email allowlist before page navigation. Missing configuration fails closed. A real identity provider and hosted callback have not been tested. The application has no database or commerce API, and no deployment, browser, accessibility, load, or production verification is claimed.
+
+`src/services/__init__.py` eagerly imports the existing service modules. Those modules are included in the source manifest because package initialization loads them; their customer workflows are not called by public pages. Training scripts, private datasets, model artifacts, and reports are not runtime manifest entries.

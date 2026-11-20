@@ -2,10 +2,15 @@ import time
 
 import streamlit as st
 
+from src.config.settings import Settings
 from src.services.classification_service import ProductCategoryService
 from src.ui.components import escape_html_text, render_page_header, render_status_label
 from src.utils.exceptions import BackendError, ValidationError
 
+
+CLASSIFIER_UNAVAILABLE_MESSAGE = (
+    "Product Classification is temporarily unavailable while its model is being prepared for public access."
+)
 
 CATEGORY_ACCENTS = {
     "Household": "#18A999",
@@ -14,12 +19,18 @@ CATEGORY_ACCENTS = {
     "Electronics": "#F59E0B",
 }
 
+classifier_available = Settings().category_model.is_file()
 render_page_header(
     "Product intelligence",
     "Classify a product description",
     "Use the saved TF-IDF and Linear SVM pipeline to identify the most likely approved product category.",
 )
-render_status_label("Live model")
+render_status_label("Live model" if classifier_available else "Temporarily unavailable")
+
+if not classifier_available:
+    st.info(CLASSIFIER_UNAVAILABLE_MESSAGE)
+    st.caption("No classification was generated.")
+    st.stop()
 
 st.markdown('<div style="height:.7rem"></div>', unsafe_allow_html=True)
 left, right = st.columns([1.55, 1], gap="large")
@@ -70,9 +81,9 @@ if submitted:
         if st.button("Clear and classify another", key="clear_classification"):
             st.session_state.classification_text = ""
             st.rerun()
-    except ValidationError as exc:
-        st.error(str(exc))
-    except BackendError as exc:
-        st.error(str(exc))
+    except ValidationError:
+        st.error("Enter a non-empty product description with no more than 5,000 characters.")
+    except BackendError:
+        st.info(CLASSIFIER_UNAVAILABLE_MESSAGE)
     except Exception:
-        st.error("The category model could not complete this prediction.")
+        st.info(CLASSIFIER_UNAVAILABLE_MESSAGE)

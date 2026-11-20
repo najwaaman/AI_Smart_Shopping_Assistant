@@ -1,42 +1,30 @@
-# Running locally
+﻿# Running the public app locally
 
 ## Requirements
 
-- Standard CPython 3.14.3.
-- Direct application dependencies pinned in `requirements-deployment.txt` (not a full transitive lock).
-- Private saved models plus approved March/June data and report files at configured paths. These are not included in a public source checkout.
-
-## Windows PowerShell
-
-Use a fresh virtual environment; do not replace an existing environment:
+Use a Python version supported by your environment. CPython 3.14.3 was used for the previously prepared pinned dependency environment; this guide does not claim compatibility with every Streamlit host. Root `requirements.txt` includes the Streamlit `auth` extra but is unpinned and includes development/analysis libraries.
 
 ```powershell
-py -3.14 -m venv .venv-local
-.\.venv-local\Scripts\Activate.ps1
-python -m pip install -r requirements-deployment.txt
+py -3.14 -m venv .venv-public
+.\.venv-public\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
 python -m pip check
 ```
 
-Configure OIDC values from `.streamlit/secrets.toml.example` in a local ignored `.streamlit/secrets.toml` or a secret manager. Set `APP_ALLOWED_EMAILS` to comma-separated exact verified addresses in the process environment. Missing or placeholder values fail closed. Never place secrets in `.env.example` or commit real values.
+No package installation was performed during Phase 1E.1.
 
-Start only through the authenticated entry point:
+## Authentication and startup
+
+Configure the OIDC placeholder values from `.streamlit/secrets.toml.example` in an ignored local secrets file or an approved secret manager. Set `APP_ALLOWED_EMAILS` in the process environment to exact verified email addresses. The app denies access when configuration is missing or incomplete. Do not place real values in `.env.example`.
+
+Start from the project root through the authenticated entry point:
 
 ```powershell
 python -m streamlit run app.py --server.headless true --server.port 8501
 ```
 
-The server health endpoint is `/_stcore/health`; a healthy response does not prove authentication, artifacts, or page workflows.
+## Public page behavior
 
-## Tests
+The fictional Recommendations and Predictions demonstrations require no private data or model. Customer Intelligence, Overview, Customer Segments, and Model Insights withhold aggregate report values while privacy approval is pending. Product Classification displays an unavailable state unless its private classifier artifact has been legitimately provisioned. No customer records, reports, or model files are included in this public release manifest.
 
-```powershell
-python -m unittest discover -s tests -p "test_*.py" -v
-```
-
-The suite uses synthetic in-memory fixtures and temporary model-loader artifacts. It does not require or read customer-level files. Private artifact compatibility checks are a separate task and must use only approved March/June assets.
-
-## Pages
-
-The app registers Overview, Product Classification, Recommendations, Customer Intelligence, Predictions, Customer Segments, and Model Insights. Customer prediction/history workflows support March 1 and June 1, 2011; recommendations are June-only. Page harnesses are not a substitute for browser navigation, responsive-layout, accessibility, or identity-provider testing.
-
-See the [deployment guide](deployment-guide.md) before any hosting work.
+The Streamlit health endpoint checks server liveness only; it does not validate OIDC, model availability, or report approval. See the [deployment guide](deployment-guide.md) for host limitations and the [public release manifest](public-release-manifest.md) for file exclusions.

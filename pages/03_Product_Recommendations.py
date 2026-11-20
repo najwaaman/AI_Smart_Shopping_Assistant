@@ -1,75 +1,87 @@
+import plotly.express as px
 import pandas as pd
 import streamlit as st
-from src.ui.components import escape_html_text
 
-from src.services.recommendation_service import RecommendationService
+from src.services.public_aggregate_service import PublicAggregateDataError
 from src.ui.components import render_page_header, render_status_label
-from src.utils.exceptions import BackendError, ValidationError, UnknownCustomerError, UnsupportedCutoffError
+from src.ui.public_aggregate_pages import load_public_aggregate
+from src.ui.public_demo_logic import ILLUSTRATIVE_CATALOGUE, illustrative_recommendations
 
 
 render_page_header(
     "Personalized commerce",
-    "Product recommendations",
-    "Explore ranked item-item recommendations for customers represented in the approved June dataset.",
+    "Illustrative product recommendation demo",
+    "Explore how item-to-item similarity can rank fictional products. This toy catalogue is not transaction data or a trained model output.",
 )
-render_status_label("Live recommendations")
+render_status_label("Illustrative demo")
 
-st.markdown('<div style="height:.7rem"></div>', unsafe_allow_html=True)
 st.markdown('<div class="section-card">', unsafe_allow_html=True)
-st.subheader("Recommendation input")
-col1, col2, col3, action = st.columns([1.2, 1, 1, 1], gap="medium")
-with col1:
-    customer_id = st.number_input("Customer ID", min_value=1, step=1, value=None, placeholder="Enter an approved customer ID")
-with col2:
-    cutoff = st.selectbox("Approved cutoff", ["2011-06-01"])
-with col3:
-    k = st.selectbox("Recommendations", [5, 10, 20], index=1)
-with action:
-    st.markdown('<div style="height:1.95rem"></div>', unsafe_allow_html=True)
-    submitted = st.button("Generate recommendations", type="primary", use_container_width=True)
-st.markdown('</div>', unsafe_allow_html=True)
+st.subheader("Build a fictional shopping basket")
+st.caption("All products and feature descriptors below are invented for demonstration. No customer identifiers, shopping histories, or private recommendation files are used.")
 
-if submitted:
+left, right = st.columns([1.05, 1.25], gap="large")
+with left:
+    basket = st.multiselect(
+        "Choose fictional items",
+        options=list(ILLUSTRATIVE_CATALOGUE),
+        default=["Comet Trail Mug", "Paperleaf Notebook"],
+        help="Choose one or more products from the fictional catalogue.",
+    )
+    recommendation_count = st.slider("Products to show", min_value=1, max_value=5, value=3)
+    st.markdown("**Illustrative feature dimensions**")
+    st.caption("On-the-go · drinkware · reusable · desk · stationery · storage")
+
+with right:
+    st.markdown('<div class="info-card">', unsafe_allow_html=True)
+    st.markdown("**How this demo ranks products**")
+    st.markdown(
+        "Each fictional product has a small hand-authored feature vector. The page computes cosine similarity between each candidate and the selected basket, then averages those similarities. "
+        "These values explain the example logic only; they are not learned from purchases and do not represent the project recommender."
+    )
+    st.markdown("</div>", unsafe_allow_html=True)
+st.markdown("</div>", unsafe_allow_html=True)
+
+if not basket:
+    st.info("Choose at least one fictional product to see the illustrative ranking.")
+else:
+    results = illustrative_recommendations(basket, recommendation_count)
+    st.markdown('<div style="height:.8rem"></div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-card">', unsafe_allow_html=True)
+    st.subheader("Illustrative item-to-item ranking")
+    st.caption("Toy cosine similarities only — not model scores, recommendations for a real person, or evidence of product demand.")
+    if not results:
+        st.info("No fictional products remain outside the selected basket.")
+    else:
+        chart_data = pd.DataFrame(results)
+        fig = px.bar(
+            chart_data.sort_values("illustrative_similarity"),
+            x="illustrative_similarity",
+            y="product",
+            orientation="h",
+            color_discrete_sequence=["#3568FF"],
+            labels={"illustrative_similarity": "Illustrative cosine similarity", "product": "Fictional product"},
+        )
+        fig.update_layout(template="plotly_white", height=300, margin=dict(l=12, r=18, t=12, b=12), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+        fig.update_xaxes(range=[0, 1], title="Illustrative cosine similarity", showgrid=True, gridcolor="#EEF2F7")
+        fig.update_yaxes(title="", showgrid=False)
+        st.plotly_chart(fig, width="stretch")
+
+        cards = st.columns(min(3, len(results)))
+        for index, item in enumerate(results):
+            with cards[index % len(cards)]:
+                st.markdown('<div class="kpi-card">', unsafe_allow_html=True)
+                st.markdown(f"<div class='kpi-label'>Illustrative rank {index + 1}</div>", unsafe_allow_html=True)
+                st.markdown(f"<div class='kpi-value' style='font-size:1.15rem'>{item['product']}</div>", unsafe_allow_html=True)
+                st.markdown(f"<div class='kpi-note'>Toy similarity: {item['illustrative_similarity']:.3f}</div>", unsafe_allow_html=True)
+                st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
+
+with st.expander("Aggregate recommendation evaluation"):
     try:
-        with st.spinner("Preparing recommendation ranking..."):
-            result = RecommendationService().recommendations(int(customer_id or 0), k=k, cutoff=cutoff)
-        st.markdown('<div style="height:.8rem"></div>', unsafe_allow_html=True)
-
-        history = pd.read_csv("datasets/features/recommendation/customer_recommendation_features.csv")
-        june_history = history[(history["snapshot_cutoff"] == cutoff) & (history["Customer ID"] == int(customer_id or 0))]
-        history_count = int(june_history["customer_interaction_count"].iloc[0]) if not june_history.empty else 0
-
-        if history_count > 0 and history_count <= 5:
-            st.info("Known customer with limited purchase history. The displayed ranking comes from the approved recommendation records.")
-        elif history_count == 0:
-            st.warning("Customer record exists, but approved purchase history is insufficient for personalized ranking.")
-
-        st.markdown('<div class="section-card">', unsafe_allow_html=True)
-        st.subheader(f"Top {k} recommendations")
-        st.caption(f"Customer {int(customer_id or 0)} · cutoff {cutoff} · {result['recommendation_method']}")
-        st.markdown('</div>', unsafe_allow_html=True)
-
-        recommendations = result["recommendations"]
-        if not recommendations:
-            st.warning("No recommendations were returned. No alternate customer or result set was substituted.")
-        else:
-            cols = st.columns(2)
-            for index, item in enumerate(recommendations):
-                with cols[index % 2]:
-                    description = escape_html_text(item.get("Description") or "No description available")
-                    stockcode = escape_html_text(item.get("StockCode"))
-                    recommendation_source = escape_html_text(item.get("recommendation_source", ""))
-                    st.markdown(
-                        f'<div class="kpi-card" style="min-height:178px;margin-bottom:.8rem"><div style="display:flex;justify-content:space-between;align-items:center"><div class="kpi-label">Rank {int(item["rank"])}</div><div style="font-size:.72rem;color:#3568FF;font-weight:800">{recommendation_source}</div></div><div style="font-size:1.04rem;font-weight:850;margin:.8rem 0 .35rem;color:#172033">{description}</div><div style="color:#67748A;font-size:.82rem">StockCode <strong>{stockcode}</strong></div><div style="margin-top:.9rem;font-size:.78rem;color:#67748A">Item-item ranking score: {float(item["score"]):.4f}</div></div>',
-                        unsafe_allow_html=True,
-                    )
-    except UnknownCustomerError:
-        st.error("Unknown customer: no approved Phase 8 recommendation record exists for this customer and cutoff.")
-    except UnsupportedCutoffError:
-        st.error("Unsupported cutoff: recommendations are available only for the approved June 1, 2011 dataset.")
-    except ValidationError as exc:
-        st.error(str(exc))
-    except BackendError as exc:
-        st.error(str(exc))
-    except Exception:
-        st.error("Recommendations could not be generated. No alternate result was substituted.")
+        metrics = load_public_aggregate("reports/recommendation/phase_8/Recommendation_Metrics_By_K.csv")
+    except PublicAggregateDataError:
+        st.info("Aggregate evaluation values are pending the Phase 1B provenance and privacy release gate.")
+    else:
+        view = metrics[["method", "k", "precision", "recall", "map", "ndcg", "hit_rate", "catalog_coverage", "diversity"]].copy()
+        st.caption("Approved aggregate method metrics only. These population-level evaluation results are separate from the fictional ranking above.")
+        st.dataframe(view, width="stretch", hide_index=True)

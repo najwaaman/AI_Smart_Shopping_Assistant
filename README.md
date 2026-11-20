@@ -1,91 +1,56 @@
 # AI Smart Shopping Assistant
 
-A Streamlit portfolio application for retail product classification and approved historical customer analytics. It demonstrates saved-model inference, June-only product recommendations, March/June customer predictions, descriptive segmentation, and precomputed model explanations. It is an evaluation prototype, not a production shopping service.
+A seven-page Streamlit portfolio application demonstrating product-text classification and privacy-aware retail analytics. This is a portfolio prototype, not a production shopping service. The public application is designed to render without customer datasets or private model files; some pages therefore show demonstrations or pending states instead of project data.
 
-## Features
+## Application pages
 
-- **Product classification:** Linear SVM with TF-IDF, served through a saved scikit-learn pipeline. The recorded separate product-description test accuracy is **95.80%**.
-- **Product recommendations:** June 2011 only. The UI returns precomputed item-item cosine-similarity recommendation rows; it does not generate an on-demand recommendation from the serialized recommender artifacts. No unknown-customer fallback is implemented.
-- **Repeat-purchase prediction:** saved Gradient Boosting classifier using approved March or June feature records.
-- **Future-spending prediction:** saved Ridge Regression model. Outputs are unconstrained and have no established currency label.
-- **Customer segmentation:** March-fitted KMeans with three descriptive clusters; the application looks up approved March/June assignments.
-- **Model insights:** native feature importance, Ridge coefficient magnitude, June permutation importance, and saved zero-feature perturbation examples. SHAP is not used.
-- **Seven Streamlit pages:** Overview, Product Classification, Recommendations, Customer Intelligence, Predictions, Customer Segments, and Model Insights.
-- **Sign-in gate:** Streamlit OIDC with an exact verified-email allowlist. A real identity provider is not configured in this workspace.
+| Page | Public behavior |
+| --- | --- |
+| Overview | Withholds report-derived metrics while aggregate provenance and privacy review is pending. |
+| Product Classification | Uses the saved TF-IDF + Linear SVM pipeline only when a legitimately provisioned artifact is available. Otherwise it shows a clear unavailable message and returns no prediction. The recorded separate product-text test accuracy is **95.80%**; this does not mean the model is included. |
+| Recommendations | Interactive fictional catalogue and illustrative item-to-item cosine ranking. It does not use customer histories or represent trained-model output. Aggregate evaluation values remain withheld. |
+| Customer Intelligence | No customer lookup or customer records. Aggregate cohort values remain withheld pending review. |
+| Predictions | Interactive hypothetical inputs and transparent rule arithmetic. It does not produce predictions from the saved repeat-purchase or spending models. |
+| Customer Segments | Aggregate profile, stability, and comparison values remain withheld pending review; no individual assignments are shown. |
+| Model Insights | Global importance and comparison values remain withheld pending review; no individual explanation records are shown. |
 
-## Data and evaluation
+The Phase 1A aggregate service accepts only its explicit report allowlist. The release gate is intentionally disabled. Keep it disabled until every report has completed provenance and privacy approval. Suppression must not be bypassed.
 
-The product-description corpus and retail transaction data are separate data families. Customer snapshots, model-ready classification/regression features, recommendation records, customer insights, and model reports remain separate artifacts; the project does not describe them as one merged dataset.
+## Privacy and data boundaries
 
-Customer temporal evaluation uses March 1, 2011 for training/fitting and June 1, 2011 for validation. The September 2011 holdout is protected and is not used or reported here. The text-classification test split is a distinct task and is not a customer holdout.
+- Customer-level datasets, reports, and model artifacts are private and excluded from this public release manifest.
+- Public demonstrations use fictional or visitor-entered values only; illustrative calculations and heuristic threshold checks are not trained ML predictions or causal inferences.
+- Product descriptions and retail transaction analytics are separate data families; they are not described as one merged dataset.
+- Do not add customer identifiers, individual records, credentials, private reports, or protected holdout data or derived outputs to source control or deployment assets.
+- Independent final holdout evaluation is not performed or claimed; the final temporal holdout remains protected and unaccessed.
+- Public pages do not expose customer-specific workflows. Backend service modules retained for package compatibility are not invoked by these pages.
 
-Detailed metric sources, preprocessing, field definitions, and limitations are documented in [data and evaluation](docs/data-and-evaluation.md). Gross spending is shown without a currency denomination. See [architecture and modules](docs/architecture-and-modules.md) for details on precomputed versus live model behavior.
+## Local setup
 
-## Screenshots
+Use a Python version supported by the selected host. The pinned deployment requirements were previously prepared for CPython 3.14.3, but compatibility must be confirmed for the chosen platform. The root `requirements.txt` is unpinned and includes analysis dependencies; it is a development bootstrap, not a reproducible lock file.
 
-No screenshots are included because this final audit did not perform browser-based visual testing. Add screenshots only after reviewing them for customer identifiers, private data, credentials, and misleading values.
-
-## Requirements and local setup
-
-Use standard CPython 3.14.3 and a **new** virtual environment. `requirements-deployment.txt` pins direct runtime dependencies, but is not a fully resolved transitive lock file. Local model and approved March/June data/report artifacts are private and are not included in a public checkout.
-
-Windows PowerShell, from the project root:
+Windows PowerShell:
 
 ```powershell
-py -3.14 -m venv .venv-local
-.\.venv-local\Scripts\Activate.ps1
-python -m pip install -r requirements-deployment.txt
+py -3.14 -m venv .venv-public
+.\.venv-public\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
 python -m pip check
-```
-
-Do not install into an existing project environment. The supported Streamlit entry point is `app.py`:
-
-```powershell
 python -m streamlit run app.py --server.headless true --server.port 8501
 ```
 
-### Configure OIDC access
+Run the application through `app.py`, which applies the authentication gate before navigation. Pages can render without customer datasets, aggregate reports, or model artifacts. Product Classification stays unavailable unless an approved private provisioning path is established.
 
-Create an OIDC client with a provider you control, then supply the `[auth]` values from `.streamlit/secrets.toml.example` through a secret manager or a local ignored `.streamlit/secrets.toml`. Set `APP_ALLOWED_EMAILS` in the process environment to comma-separated exact verified email addresses. The application denies access if secrets are incomplete, the allowlist is empty, or the identity is not logged in with a verified allowlisted email. The identity provider, callback, and account lifecycle have not been tested here.
+## Streamlit deployment requirements
 
-Never commit credentials, customer data, model files, or private reports. Review [deployment security](docs/deployment-security.md) and [deployment guide](docs/deployment-guide.md) before exposing the service.
+Configure the selected host to use `app.py`, a supported Python version, and compatible runtime dependencies. The current `requirements.txt` includes `streamlit[auth]`; `requirements-deployment.txt` is pinned but does not declare the Streamlit `auth` extra or `httpx` explicitly. Reconcile and validate that dependency set before using it for an authenticated deployment. It is not a complete transitive lock file.
 
-## Tests and checks
+The application requires Streamlit OIDC configuration in the host's secret manager and a comma-separated `APP_ALLOWED_EMAILS` process environment value. The checked-in secret file is a placeholder template only. Missing or invalid authentication configuration fails closed. Configuring an external OAuth audience or broad provider-side user type setting alone does not remove or bypass the application-level email allowlist (`APP_ALLOWED_EMAILS`). Do not claim that public access is enabled until authentication and authorization have been properly configured and tested with authorized identities. No live identity provider or hosted deployment has been tested.
 
-From the project root:
+Streamlit's `/_stcore/health` endpoint indicates server liveness only; it does not verify authentication, model availability, aggregate approval, or page workflows. Browser, accessibility, performance, and production checks are not claimed.
 
-```powershell
-python -m unittest discover -s tests -p "test_*.py" -v
-```
+## Project files and release exclusions
 
-The suite now uses synthetic fixtures and temporary model-loader artifacts; it does not load customer datasets or configured model files. Separate private artifact/model compatibility checks are needed when preparing a local deployment. Streamlit's `/_stcore/health` endpoint checks server liveness only; it does not validate authentication, model/data availability, or page workflows.
+See [the public release manifest](docs/public-release-manifest.md) for the exact source, documentation, and synthetic tests selected for a future release. The manifest excludes datasets, models, reports, deployment staging, notebooks, unreviewed portfolio material, secrets, and local environments. `.gitignore` protects private artifact locations, but all release files still require exact staging review.
 
-## Project layout
-
-```text
-app.py                         Authenticated Streamlit entry point
-pages/                         Seven dashboard pages
-src/config/                    Model, approved data, and predictor paths
-src/models/                    Saved artifact loader
-src/preprocessing/             Input and feature validation
-src/services/                  Classification, recs, predictions, segments, insights
-src/ui/                        Authentication, dashboard data, shared UI
-models/                        Private saved models; excluded from publication
-datasets/                      Private source and derived data; excluded from publication
-deployment_staging/            Ignored local model-only staging bundle
-docs/                          Architecture, data, local setup, deployment guides
-tests/                         Unit, integration, isolation, and auth tests
-reports/                       Evaluation and internal phase reports
-```
-
-## Known limitations and status
-
-- The recommendation runtime serves precomputed June rows, not on-demand personalized model inference.
-- Repeat-purchase validation performance is moderate; spending can be negative and has no currency label.
-- Segment identifiers are descriptive, not customer-value ranks.
-- Individual explanations are precomputed zero-feature perturbation proxies and are not causal explanations.
-- Authentication was tested with local mocks only. No provider login, browser, accessibility, performance, deployment-host, or production test is claimed.
-- Private runtime data provisioning and cloud-level access controls remain to be finalized and verified.
-- No deployment has occurred. This project is **not production-ready**.
-
-Internal final audit, readiness, and release-checklist reports are retained in the local workspace and are not part of a public source release.
+See [architecture and modules](docs/architecture-and-modules.md), the [deployment guide](docs/deployment-guide.md), and [deployment security](docs/deployment-security.md) for current behavior and limits.
