@@ -12,7 +12,7 @@ The following 44 files comprise the complete public application runtime, UI laye
 
 | File Path | Component | Purpose |
 | :--- | :--- | :--- |
-| `app.py` | Entry Point | Configures Streamlit page layout, applies the fail-closed authentication gate (`require_authenticated_user`), applies UI theme, and registers all seven public pages into navigation. |
+| `app.py` | Entry Point | Configures Streamlit page layout, applies mandatory Google OIDC sign-in (`require_authenticated_user`), applies UI theme, and registers all seven public pages into navigation. |
 | `pages/01_Overview.py` | UI Page | Shopping analytics overview dashboard. Displays model candidates, comparative evaluation charts, and privacy-filtered segment profiles via the release-gated public aggregate service. |
 | `pages/02_Product_Classification.py` | UI Page | Product category classification workspace. Invokes `ProductCategoryService` if the saved pipeline artifact is legitimately available; otherwise renders a fail-closed, neutral unavailable state without exposing internal paths. |
 | `pages/03_Product_Recommendations.py` | UI Page | Personalized commerce demonstration page. Features an interactive fictional catalogue with illustrative item-to-item cosine similarity rankings and a release-gated aggregate evaluation panel. |
@@ -38,7 +38,7 @@ The following 44 files comprise the complete public application runtime, UI laye
 | `src/services/historical_snapshot_service.py` | Services | Legacy customer snapshot service retained for package compatibility; not invoked by public pages. |
 | `src/services/analytics_service.py` | Services | Legacy analytics summary service retained for package compatibility; not invoked by public pages. |
 | `src/ui/__init__.py` | UI Layer | UI package initialization exporting theme, styles, and core components. |
-| `src/ui/authentication.py` | UI Layer | Fail-closed Streamlit OIDC setting validation and exact verified-email allowlist authorization (`APP_ALLOWED_EMAILS`). |
+| `src/ui/authentication.py` | UI Layer | Google OIDC authentication and verified email claim verification for Streamlit (open to all verified Google accounts; allowlist removed). |
 | `src/ui/components.py` | UI Layer | Reusable UI components including headers, KPI cards, section headings, status labels, and HTML escaping. |
 | `src/ui/navigation.py` | UI Layer | Sidebar branding and footer navigation rendering functions. |
 | `src/ui/public_aggregate_pages.py` | UI Layer | Shared release-gated access layer (`PUBLIC_AGGREGATES_RELEASED = False`) and view projection helpers for aggregate pages. |
@@ -117,8 +117,8 @@ The public runtime dependencies listed in `requirements-deployment.txt` were eva
 
 ## 5. Security and Data Access Verification
 
-- **Fail-Closed Authentication**: `app.py` blocks execution unless valid OIDC secrets and a non-empty `APP_ALLOWED_EMAILS` are configured.
-- **Email Allowlist Precedence**: Configuring an external OAuth audience or broad provider-level user type setting does not remove or bypass the application-level email allowlist (`APP_ALLOWED_EMAILS`).
+- **Fail-Closed Google Authentication**: `app.py` blocks execution unless valid Google OIDC secrets are configured, and stops unauthenticated visitors until they sign in with a verified Google account.
+- **Open Public Access Without Allowlist**: Any visitor with a valid, verified Google account can authenticate and use the demo; the restrictive `APP_ALLOWED_EMAILS` requirement has been removed.
 - **Release Gate Disabled**: `PUBLIC_AGGREGATES_RELEASED` is set to `False` in `src/ui/public_aggregate_pages.py`. All public aggregate pages show informative pending banners without attempting report reads.
 - **Fail-Closed Classifier**: `ProductCategoryService` displays a safe unavailable notice when the model artifact is absent or fails to load, preventing error tracebacks or internal path disclosures.
 - **Illustrative Demos**: Recommendations and Predictions use deterministic fictional logic and explicit arithmetic rules, not trained machine learning models or customer records.

@@ -1,4 +1,4 @@
-"""Fail-closed OIDC authentication and exact email authorization for Streamlit."""
+"""Google OIDC authentication and verified email verification for Streamlit."""
 
 from collections.abc import Mapping
 import os
@@ -19,7 +19,7 @@ EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
 def parse_allowed_emails(raw_value=None):
-    """Return a normalized exact-email allowlist from the deployment environment."""
+    """Return a normalized exact-email allowlist (legacy/optional compatibility)."""
     raw_value = os.environ.get("APP_ALLOWED_EMAILS", "") if raw_value is None else raw_value
     return {
         email.strip().casefold()
@@ -62,14 +62,24 @@ def _claim(user, name):
         return getattr(user, name, None)
 
 
-def is_authorized_user(user, allowed_emails):
-    """Authorize only logged-in identities with a verified, exact allowlisted email."""
+def is_verified_user(user):
+    """Verify that identity is logged in with a verified email address."""
     if _claim(user, "is_logged_in") is not True:
         return False
     if _claim(user, "email_verified") is not True:
         return False
     email = _claim(user, "email")
-    return isinstance(email, str) and email.strip().casefold() in allowed_emails
+    return isinstance(email, str) and bool(EMAIL_PATTERN.fullmatch(email.strip()))
+
+
+def is_authorized_user(user, allowed_emails=None):
+    """Authorize any logged-in identity with a verified email address (allowlist optional)."""
+    if not is_verified_user(user):
+        return False
+    if allowed_emails:
+        email = _claim(user, "email")
+        return isinstance(email, str) and email.strip().casefold() in allowed_emails
+    return True
 
 
 def _configured_auth():
@@ -81,24 +91,26 @@ def _configured_auth():
 
 
 def require_authenticated_user():
-    """Stop every application run unless OIDC and exact-email authorization pass."""
+    """Stop every application run unless Google OIDC authentication passes."""
     auth_settings = _configured_auth()
-    allowed_emails = parse_allowed_emails()
-    if not has_valid_oidc_settings(auth_settings) or not allowed_emails:
+    if not has_valid_oidc_settings(auth_settings):
         st.error(
-            "Application access is disabled: configure valid OIDC secrets and "
-            "APP_ALLOWED_EMAILS in the deployment secret/environment settings."
+            "Application access is disabled: configure valid Google OIDC secrets "
+            "in the deployment secret/environment settings."
         )
         st.stop()
 
     user = st.user
-    if not is_authorized_user(user, allowed_emails):
+    if not is_verified_user(user):
         if _claim(user, "is_logged_in") is True:
-            st.error("This verified account is not authorized for this application.")
-            st.button("Sign out", on_click=st.logout, key="auth_sign_out_denied")
+            st.error("A verified email address is required to access this application.")
+            st.button("Sign out", on_click=st.logout, key="auth_sign_out_unverified")
         else:
-            st.info("Sign in with an authorized organization account to continue.")
-            st.button("Sign in", on_click=st.login, key="auth_sign_in")
+            st.info("Sign in with your Google account to access the shopping assistant demo.")
+            st.button("Sign in with Google", on_click=st.login, key="auth_sign_in")
         st.stop()
 
+    email = _claim(user, "email")
+    if email:
+        st.sidebar.caption(f"Signed in as: {email}")
     st.sidebar.button("Sign out", on_click=st.logout, key="auth_sign_out")

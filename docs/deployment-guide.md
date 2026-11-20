@@ -4,7 +4,7 @@ This guide describes preparation for the public portfolio application. It is not
 
 ## Entry point and public runtime
 
-Start Streamlit through `app.py`; do not use individual page scripts as the host entry point. The app applies its OIDC and exact-email allowlist before rendering navigation. All seven pages can render without customer datasets, model artifacts, or aggregate reports when the aggregate release gate remains closed. Product Classification shows an unavailable state until an approved private pipeline artifact is provisioned. Recommendations and Predictions use fictional, clearly labeled demonstrations.
+Start Streamlit through `app.py`; do not use individual page scripts as the host entry point. The app applies mandatory Google OIDC authentication before rendering navigation. Every visitor with a verified Google account can access all seven public demo pages; no email allowlist is required. All seven pages can render without customer datasets, model artifacts, or aggregate reports when the aggregate release gate remains closed. Product Classification shows an unavailable state until an approved private pipeline artifact is provisioned. Recommendations and Predictions use fictional, clearly labeled demonstrations.
 
 The public aggregate loader only reads explicitly allowlisted reports, but the application release gate is currently disabled. Do not bundle or provision those reports until each report has separate provenance and privacy approval. The manifest intentionally excludes all datasets, reports, and models.
 
@@ -33,7 +33,7 @@ Streamlit's `/_stcore/health` endpoint checks server liveness only. It does not 
 
 ## Authentication configuration
 
-Supply the placeholder `[auth]` configuration from `.streamlit/secrets.toml.example` through the host secret manager. Set `APP_ALLOWED_EMAILS` in the process environment to exact verified addresses. Configuring an external OAuth audience or broad provider-side user type setting does not remove or bypass the application-level email allowlist: every user must still be explicitly listed in `APP_ALLOWED_EMAILS` with a verified email claim. Do not claim that public access is enabled until authentication and authorization have been properly configured and tested. Do not put real credentials in source control or treat `.env.example` as an automatic loader. Missing or invalid authentication configuration intentionally denies access. No live identity provider, callback, or authorized account flow was tested.
+Supply the placeholder `[auth]` configuration from `.streamlit/secrets.toml.example` through the host secret manager (Streamlit Community Cloud App Settings > Secrets). The app uses Google OIDC with `server_metadata_url = "https://accounts.google.com/.well-known/openid-configuration"`. No `APP_ALLOWED_EMAILS` environment variable or restrictive email allowlist is required; any visitor with a verified Google account is authorized to view the public demo. Unauthenticated visitors are prompted to sign in with Google. Do not put real credentials in source control or commit real client or cookie secrets. Missing or invalid OIDC configuration intentionally denies access.
 
 ## Private artifact policy
 
@@ -41,4 +41,4 @@ Keep customer data, private reports, saved models, notebooks with unreviewed out
 
 ## Release blockers
 
-Before deployment, reconcile the OIDC dependency extra/httpx, validate the target host's Python support, configure the approved identity provider and allowlist, and obtain approval for any report or model provisioning. The working tree must also receive exact staged-file review; this phase does not stage or publish files.
+Before deployment, configure the approved Google Cloud OAuth credentials (`client_id`, `client_secret`, `redirect_uri`, `cookie_secret`) in the host secret manager, ensure the deployment host visibility is set to Public, and obtain approval for any report or model provisioning. The working tree must also receive exact staged-file review; this phase does not stage or publish files.

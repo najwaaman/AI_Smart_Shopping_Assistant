@@ -1,4 +1,4 @@
-﻿# Running the public app locally
+# Running the public app locally
 
 ## Requirements
 
@@ -15,7 +15,7 @@ No package installation was performed during Phase 1E.1.
 
 ## Authentication and startup
 
-Configure the OIDC placeholder values from `.streamlit/secrets.toml.example` in an ignored local secrets file or an approved secret manager. Set `APP_ALLOWED_EMAILS` in the process environment to exact verified email addresses. The app denies access when configuration is missing or incomplete. Do not place real values in `.env.example`.
+Configure the Google OIDC placeholder values from `.streamlit/secrets.toml.example` in an ignored local `.streamlit/secrets.toml` file or an approved secret manager. Any visitor with a verified Google account can access the application; no restrictive email allowlist is required. The app denies unauthenticated access and fails closed if OIDC settings are missing or incomplete. Do not place real values in `.env.example` or commit secrets to git.
 
 Start from the project root through the authenticated entry point:
 

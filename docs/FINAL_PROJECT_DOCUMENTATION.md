@@ -93,7 +93,7 @@ python -m pip check
 python -m streamlit run app.py --server.headless true --server.port 8501
 ```
 
-Configure OIDC values from `.streamlit/secrets.toml.example` in a local ignored secrets file or a secret manager. Set `APP_ALLOWED_EMAILS` to exact verified email addresses. Missing or invalid authentication settings fail closed. No live identity-provider configuration is present in this workspace.
+Configure Google OIDC values from `.streamlit/secrets.toml.example` in a local ignored secrets file or a secret manager. Any visitor with a verified Google account can authenticate and use the demo; no email allowlist is required. Missing or invalid authentication settings fail closed. No live identity-provider configuration is present in this workspace.
 
 The existing unit suite uses synthetic fixtures and temporary model-loader objects. Run it from the project root with:
 
